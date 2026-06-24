@@ -49,21 +49,17 @@ plugins = ["nonebot-plugin-phitk-autorender"]
 ## 🎮 使用方法
 
 ### 基础指令
-- `arc <角色> <文字>` - 快速生成表情包
-- `arc` - 进入交互模式（新手友好）
-- `arc -h` - 查看文本帮助（快速参考）
-- `arc帮助` - 查看图片帮助（精美版，推荐首次使用）
+- `引用一个 .pez | .zip 文件并 @bot /render` - 以默认 `1080p 30fps 无加载动画&结算动画 背景亮度40` 渲染引用谱面
+- `Alternative: @bot /xr` - /render 的命令别名
 
 ### 自定义参数（都是可选的）
-| 参数 | 说明 | 范围 | 默认值 | 补充说明 |
-|------|------|------|--------|----------|
-| `-s, --size` | 文字大小 | 20~45 | 35 | 数字越大文字越大,多行文字建议25-35 |
-| `-x` | 横向位置 | 0~296 | 148 | 0=最左边,148=居中,296=最右边 |
-| `-y` | 纵向位置 | 0~256 | 128 | 0=最上方,128=居中,256=最下方 |
-| `-r, --rotate` | 旋转角度 | -180~180 | -12 | 正数顺时针,负数逆时针,建议-30~30度 |
-| `-c, --color` | 文字颜色 | 十六进制 | 角色专属 | 支持`#ff0000`或`ff0000`格式 |
-| `-w, --stroke-width` | 描边宽度 | 整数 | 9 | 文字边框的粗细 |
-| `-C, --stroke-color` | 描边颜色 | 十六进制 | 自动生成 | 默认比文字颜色深30% |
+| 排序 | 说明 | 可用值 | 默认值 | 补充说明 |
+|------|---------|------|--------|--------|
+| 1 | 分辨率 | 360p \| 480p \| 720p \| 1k \| 2k | 1k | 默认4:3 详见(代码)[nonebot_plugin_phitk_autorender/__init__.py#L31-L37 "nya~"] |
+| 2 | 帧率 | 0~296 | 148 | 0=最左边,148=居中,296=最右边 |
+| 3 | 背景亮度 | 0~256 | 128 | 0=最上方,128=居中,256=最下方 |
+| 4 | 显示加载界面 | -180~180 | -12 | 正数顺时针,负数逆时针,建议-30~30度 |
+| 5 | 显示结算界面 | 十六进制 | 角色专属 | 支持`#ff0000`或`ff0000`格式 |
 
 💡 提示: 文字包含空格需要加引号,换行使用`\n`
 
@@ -123,6 +119,6 @@ arc eto "Ciallo～(∠・ω<)⌒☆" -s 30 -c #fdae92 -r -28 -x 120 -y 80  # 组
 ## 💬 反馈
 
 如有问题或建议，请：
-- 提交 [Issue](https://github.com/CMDBookDevelope/nonebot-plugin-phitk-autorender/issues)
+- 提交 [Issue](https://github.com/CMDBookDevelope/nonebot-plugin-phitk-autorender/issues "我哪里做错了呜呜呜")
 
-*此 Readme.md 参考了 [nonebot-plugin-arcaea-sticker 的 readme](https://github.com/JQ-28/nonebot-plugin-arcaea-sticker#readme "oonp")*
+*此 Readme.md 参考了 [ nonebot-plugin-arcaea-sticker 的 readme](https://github.com/JQ-28/nonebot-plugin-arcaea-sticker#readme "oonp")*
