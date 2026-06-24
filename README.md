@@ -26,7 +26,7 @@
 
 ## 💿 安装
 
-*!记得去
+### ***⚠️记得先去 <a href="https://github.com/CMDBookDevelope/Phi-TK-cli"><img src="https://img.shields.io/badge/Phi--TK--CLI_Repository-pink" alt="oonp!"></img></a> 安装 Phi-TK-CLI!***
 
 ### 方式一：手动安装
 ***暂不确定是否能正常安装() 咱还是建议手动把文件夹下载到 bot 的 plugins 文件夹下完成安装，随后配置 pyproject.toml***
@@ -100,9 +100,9 @@ plugins = ["nonebot-plugin-phitk-autorender"]
 
 ## 🙏 鸣谢
 
-- [Xestarrrr](https://x.com/Xestarrrr) - 原始表情包素材创作者
-- [arcaea-stickers](https://github.com/Rosemoe/arcaea-stickers) - 网页版表情包生成器
-- [nonebot-plugin-pjsk](https://github.com/lgc-NB2Dev/nonebot-plugin-pjsk) - 参考了部分代码
+- [Link](https://github.com/Winamin "🐲") - Phi-TK 开发者
+- [Microsoft Copilot](https://copilot.microsoft.com "GPT 5o") - 贡献了部分代码
+- [DeepSeek](https://deepseek.com/ "DeepSuxk。。。(?)") - 贡献了部分代码
 - [NoneBot2](https://github.com/nonebot/nonebot2) - 跨平台 Python 异步机器人框架
 
 ## 📞 联系
