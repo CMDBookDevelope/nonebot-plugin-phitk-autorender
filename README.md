@@ -124,3 +124,5 @@ arc eto "Ciallo～(∠・ω<)⌒☆" -s 30 -c #fdae92 -r -28 -x 120 -y 80  # 组
 
 如有问题或建议，请：
 - 提交 [Issue](https://github.com/CMDBookDevelope/nonebot-plugin-phitk-autorender/issues)
+
+*此 Readme.md 参考了 [nonebot-plugin-arcaea-sticker 的 readme](https://github.com/JQ-28/nonebot-plugin-arcaea-sticker#readme "oonp")*
