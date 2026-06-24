@@ -2,11 +2,15 @@
 
 # nonebot-plugin-phitk-autorender
 
+*📚 让”kkp”变简单，不要再让”懒得开电脑渲染”成为遗憾 📚*
+
 *🔥 基于 NoneBot2, Phi-TK-CLI 的 Phigros 谱面渲染插件 🔥*
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.8--3.12+-blue.svg" alt="python">
   <img src="https://img.shields.io/badge/nonebot-2.0.0+-red.svg" alt="NoneBot">
+  <img src="https://img.shields.io/badge/Phi--TK-2.0.1+-magenta.svg" alt="Phi-TK">
+  <img src="https://img.shields.io/badge/Phi--TK--CLI-1.0.0+-pink.svg" alt="Phi-TK-CLI">
 </p>
 
 <p align="center">
@@ -21,6 +25,8 @@
 本插件可以下载用户提供的 .pez, .zip 文件，并调用 phi-tk-cli 渲染
 
 ## 💿 安装
+
+*!记得去
 
 ### 方式一：手动安装
 ***暂不确定是否能正常安装() 咱还是建议手动把文件夹下载到 bot 的 plugins 文件夹下完成安装，随后配置 pyproject.toml***
@@ -56,47 +62,40 @@ plugins = ["nonebot-plugin-phitk-autorender"]
 | 排序 | 说明 | 可用值 | 默认值 | 补充说明 |
 |------|---------|------|--------|--------|
 | 1 | 分辨率 | 360p \| 480p \| 720p \| 1k \| 2k | 1k | 默认4:3 详见[代码](nonebot_plugin_phitk_autorender/__init__.py#L31-L37 "nya~") |
-| 2 | 帧率 | 0~296 | 148 | 0=最左边,148=居中,296=最右边 |
-| 3 | 背景亮度 | 0~256 | 128 | 0=最上方,128=居中,256=最下方 |
-| 4 | 显示加载界面 | -180~180 | -12 | 正数顺时针,负数逆时针,建议-30~30度 |
-| 5 | 显示结算界面 | 十六进制 | 角色专属 | 支持`#ff0000`或`ff0000`格式 |
+| 2 | 帧率 | 0-120 | 30 | 其实 phi-tk-cli 原生支持更高帧率，可修改代码解除最高 120fps 限制 |
+| 3 | 背景亮度 | 0~100 | 40 | 0=最暗 100=最亮 |
+| 4 | 显示加载界面 | 布尔 | False | ~~棍母~~ |
+| 5 | 显示结算界面 | 布尔 | False | 3秒 |
 
 💡 提示: 文字包含空格需要加引号,换行使用`\n`
 ### 使用示例
 ```
-arc luna 好耶！                         # 基础用法
-arc hikari "第一行\n第二行" -s 45         # 多行文字
-arc 17 喜欢... -x 150 -y 100 -r -20    # 调整位置和角度
-arc nami "龙笔!" -c ff0000              # 自定义红色文字
-arc eto "Ciallo～(∠・ω<)⌒☆" -s 30 -c #fdae92 -r -28 -x 120 -y 80  # 组合多个参数
+@bot /xr & @bot /render                   # 基础用法
+@bot /xr 2k 120 0                         # 自定义分辨率 帧率 背景亮度
+@bot /xr load finish                      # 显示加载界面和结算界面
+@bot /xr 2k 120 0 load finish             # 组合多个参数...
 ```
 
 ## 📝 功能特点
 
-- ✅ 支持生成 Arcaea 角色的表情包
-- ✅ 支持命令模式和交互模式
-- ✅ 跨平台支持
-- ✅ 支持自定义文字、位置、角度、颜色等参数
-- ✅ 支持多行文本和自动换行
-- ✅ 智能文字大小调整
-- ✅ 支持中文角色名称
+- ✅ 支持自定义渲染参数
+- ✅ 支持高质量渲染
+- ✅ phi-tk-cli 支持服务器硬件加速
+- ✅ 支持曲绘背景
+- ✅ 支持 info.yml 解析出的歌曲信息&难度信息显示 (❌ 暂不支持 info.txt 解析)
+- [❌ 不支持Simai谱面渲染](https://www.maiviewer.net/ "awmc。。。")
 
 ## 🔧 依赖
 
 - Python 3.8+ (已测试支持 3.8 - 3.12)
 - NoneBot2 >= 2.0.0
-- nonebot-plugin-alconna（跨平台支持）
-- nonebot-plugin-htmlrender
-- nonebot-plugin-localstore
 
 ## 📄 开源许可
 
-本项目基于 [MIT](LICENSE) 许可证开源。
+本项目基于 [GPL-3.0](LICENSE) 许可证开源。
 
 **注意事项：**
-- 本项目代码使用 MIT 许可证开源，您可以自由使用和修改代码
-- 项目中的表情包素材来源于 [Xestarrrr](https://x.com/Xestarrrr)
-- 本项目基于 [arcaea-stickers](https://github.com/Rosemoe/arcaea-stickers) 项目开发
+- 本项目代码使用 GPL-3.0 许可证开源，您可以自由使用和修改代码
 - 请遵守原始素材的使用条款和限制
 
 ## 🙏 鸣谢
