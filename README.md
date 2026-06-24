@@ -7,10 +7,23 @@
 *🔥 基于 NoneBot2, Phi-TK-CLI 的 Phigros 谱面渲染插件 🔥*
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.8--3.12+-blue.svg" alt="python">
-  <img src="https://img.shields.io/badge/nonebot-2.0.0+-red.svg" alt="NoneBot">
-  <img src="https://img.shields.io/badge/Phi--TK-2.0.1+-magenta.svg" alt="Phi-TK">
-  <img src="https://img.shields.io/badge/Phi--TK--CLI-1.0.0+-pink.svg" alt="Phi-TK-CLI">
+  
+  <a href="https://www.python.org">
+    <img src="https://img.shields.io/badge/python-3.8--3.12+-blue.svg" alt="python">
+  </a>
+  
+  <a href="https://nonebot.dev">
+    <img src="https://img.shields.io/badge/nonebot-2.0.0+-red.svg" alt="NoneBot">
+  </a>
+  
+  <a href="https://github.com/Winamin/Phi-TK">
+    <img src="https://img.shields.io/badge/Phi--TK-2.0.1+-magenta.svg" alt="Phi-TK">
+  </a>
+
+  <a href="https://github.com/CMDBookDevelope/Phi-TK-cli">
+    <img src="https://img.shields.io/badge/Phi--TK--CLI-1.0.0+-pink.svg" alt="Phi-TK-CLI">
+  </a>
+  
 </p>
 
 <p align="center">
