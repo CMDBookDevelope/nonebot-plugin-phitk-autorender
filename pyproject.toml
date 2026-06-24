@@ -1,0 +1,29 @@
+[project]
+name = "nonebot-plugin-phitk-autorender"
+version = "0.1.0"
+description = "Arcaea sticker generator plugin for NoneBot2 with cross-platform support (Python 3.12+ compatible)"
+authors = [
+    { name = "CNMDBook", email = "3466756568@qq.com" }
+]
+dependencies = [
+    "nonebot2>=2.0.0"
+]
+requires-python = ">=3.8,<4.0"  # 支持 Python 3.8 到 3.12+
+readme = "README.md"
+license = { text = "GPL-3.0" }
+
+keywords = ["nonebot2", "plugin", "phigros", "render"]
+packages = [
+    { include = "nonebot_plugin_phitk_autorender" }
+]
+
+[project.urls]
+homepage = "https://github.com/CMDBookDevelope/nonebot-plugin-phitk-autorender"
+repository = "https://github.com/CMDBookDevelope/nonebot-plugin-phitk-autorender"
+documentation = "https://github.com/CMDBookDevelope/nonebot-plugin-phitk-autorender#readme"
+
+[tool.nonebot]
+adapters = [
+    { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
+]
+plugins = ["nonebot_plugin_arcaea_sticker"]
