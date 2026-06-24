@@ -119,4 +119,7 @@ plugins = ["nonebot-plugin-phitk-autorender"]
 如有问题或建议，请：
 - 提交 [Issue](https://github.com/CMDBookDevelope/nonebot-plugin-phitk-autorender/issues "我哪里做错了呜呜呜")
 
-*此 Readme.md 参考了 [ nonebot-plugin-arcaea-sticker 的 readme](https://github.com/JQ-28/nonebot-plugin-arcaea-sticker#readme "oonp")*
+<p align="center">
+- *此 Readme.md 参考了 [ nonebot-plugin-arcaea-sticker 的 readme](https://github.com/JQ-28/nonebot-plugin-arcaea-sticker#readme "oonp")*
+- *部分代码由AI编写/修改*
+</p>
