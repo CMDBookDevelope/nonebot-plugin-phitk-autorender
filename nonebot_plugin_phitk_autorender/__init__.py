@@ -5,6 +5,7 @@ import base64
 import re
 import random
 import yaml
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -24,8 +25,9 @@ __plugin_meta__ = PluginMetadata(
     supported_adapters={"~onebot.v11"},
 )
 
-global BINARY
-global ymlInfo
+# ===== 全局变量 =====
+ymlInfo = ""
+start_time = 0
 
 # ===== 常量配置 =====
 BINARY = "phi-tk-cli" #你的phi-tk-cli可执行文件绝对路径(或者wrapper.sh)
@@ -67,11 +69,13 @@ render_cmd = on_message(rule=to_me(), priority=10, block=True)
 
 @render_cmd.handle()
 async def handle_render(bot: Bot, event: MessageEvent):
+    global start_time
     group_id = str(event.group_id)
 
     # 1. 提取纯文本，移除 @机器人
     raw_text = event.get_plaintext().strip()
     self_id = str(bot.self_id)
+    start_time = time.time()
     if f"@{self_id}" in raw_text:
         raw_text = raw_text.replace(f"@{self_id}", "").strip()
 
@@ -432,9 +436,16 @@ async def run_phi_tk_cli(input_zip: Path, output_video: Path, resolution: str, f
         error_msg = 'Errored'
         logger.error(f"phi-tk-cli 标准错误: {error_msg}")
         #raise RuntimeError(f"phi-tk-cli 执行失败，返回码 {proc.returncode}，错误信息: {error_msg}")
-    logger.info(f"phi-tk-cli 成功退出，输出视频: {output_video}")
+    #Calc Time...
+    end = time.time()
+    diff = end - start_time
+    m = int(diff // 60)
+    s = diff % 60
+    
+    logger.info(f"phi-tk-cli 成功退出，输出视频: {output_video}, 用时{m}m{s:.2f}s")
 
 def parse_info(info_text: str) -> str:
+    global ymlInfo
     lines = info_text.strip().splitlines()
     data = {}
     for line in lines:
