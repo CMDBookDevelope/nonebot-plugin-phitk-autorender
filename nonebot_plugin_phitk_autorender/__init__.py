@@ -228,7 +228,7 @@ async def handle_render(bot: Bot, event: MessageEvent):
         await run_phi_tk_cli(chart_zip, result_video, res, fps, dark, load, finish)
         logger.info(f"phi-tk-cli 完成，输出大小: {os.path.getsize(result_video)} bytes")
 
-        await bot.send_group_msg(group_id=event.group_id, message=pre_msg)
+        await bot.send_group_msg(group_id=event.group_id, message=pre_msg + f"\nduring: {cost}")
         await bot.send_group_msg(
             group_id=event.group_id,
             message=MessageSegment.video(Path(result_video))
@@ -476,8 +476,7 @@ def parse_info(info_text: str) -> str:
             f"Level: {level}\n"
             f"Composer: {composer}\n"
             f"Charter: {charter}\n"
-            f"tip: {tip}\n"
-            f"during: {cost}")
+            f"tip: {tip}")
             
 def generate_yaml(yaml_path):
     p = Path(yaml_path)
