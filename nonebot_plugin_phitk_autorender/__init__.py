@@ -24,10 +24,12 @@ __plugin_meta__ = PluginMetadata(
     homepage="https://github.com/CMDBookDevelope/nonebot-plugin-phitk-autorender",
     supported_adapters={"~onebot.v11"},
 )
+PLUGIN_DIR = Path(__file__).parent
 
 # ===== 全局变量 =====
 ymlInfo = ""
 start_time = 0
+cost = ""
 
 # ===== 常量配置 =====
 BINARY = "phi-tk-cli" #你的phi-tk-cli可执行文件绝对路径(或者wrapper.sh)
@@ -407,6 +409,7 @@ async def make_zip(source_dir: Path, output_zip: Path):
 #     logger.info(f"文件从 URL 下载到 {save_path}")
 
 async def run_phi_tk_cli(input_zip: Path, output_video: Path, resolution: str, fps: int, dark: Optional[int], load: bool, finish: bool):
+    global cost
     cmd = [
         BINARY,
         "--input", input_zip.as_posix(),
@@ -441,8 +444,8 @@ async def run_phi_tk_cli(input_zip: Path, output_video: Path, resolution: str, f
     diff = end - start_time
     m = int(diff // 60)
     s = diff % 60
-    
-    logger.info(f"phi-tk-cli 成功退出，输出视频: {output_video}, 用时{m}m{s:.2f}s")
+    cost = f"{m}m{s:.2f}s"
+    logger.info(f"phi-tk-cli 成功退出，输出视频: {output_video}, 用时{cost}")
 
 def parse_info(info_text: str) -> str:
     global ymlInfo
@@ -457,26 +460,26 @@ def parse_info(info_text: str) -> str:
     level = data.get("Level", "Unknown Lv.?")
     composer = data.get("Composer", "Unknown")
     charter = data.get("Charter", "Unknown")
-    with open("tips.txt", "r", encoding="utf-8") as f:
+    with open(PLUGIN_DIR / "tips.txt", "r", encoding="utf-8") as f:
         lines = [line.strip() for line in f if line.strip()]  # 过滤空行
     tip = random.choice(lines)
     ymlInfo = {
                     "name": name,
                     "level": level,
-                    "difficulty": "Lv." + re.findall(r'(?i)lv\.(\S+)', level)[-1] if re.findall(r'(?i)lv\.(\S+)', level) else "UK",
+                    "difficulty": int(re.findall(r'(?i)lv\.(\S+)', level)[-1] if re.findall(r'(?i)lv\.(\S+)', level) else "UK"),
                     "illustrator": "UK",
                     "tip": tip,
                     "intro": "棍母",
-                    "format": "null"
                 }
     return (f"Render Complete:\n"
             f"Name: {name}\n"
             f"Level: {level}\n"
             f"Composer: {composer}\n"
             f"Charter: {charter}\n"
-            f"tip: {tip}")
+            f"tip: {tip}\n"
+            f"during: {cost}")
             
-def generate_yml(yaml_path):
+def generate_yaml(yaml_path):
     p = Path(yaml_path)
     if not p.exists():
         with open(yaml_path, "w", encoding="utf-8") as f:
