@@ -439,7 +439,7 @@ async def run_phi_tk_cli(input_zip: Path, output_video: Path, resolution: str, f
     stdout = await proc.communicate()
     if proc.returncode != 0:
         logger.error(f"phi-tk-cli STDERR:{proc.stderr}, STDOUT:{proc.stdout}")
-        raise RuntimeError(f"phi-tk-cli 执行失败，返回码 {proc.returncode}，错误信息: {error_msg}")
+        raise RuntimeError(f"phi-tk-cli 执行失败，返回码 {proc.returncode}")
     #Calc Time...
     end = time.time()
     diff = end - start_time
