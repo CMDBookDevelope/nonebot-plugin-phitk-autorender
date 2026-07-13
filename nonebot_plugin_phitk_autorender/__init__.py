@@ -456,11 +456,12 @@ def parse_info(info_text: str) -> str:
         if ':' in line:
             key, val = line.split(':', 1)
             data[key.strip()] = val.strip()
-    name = data.get("Name", "Unknown")
-    chart = data.get("Chart", "Unknown")
-    level = data.get("Level", "Unknown Lv.?")
-    composer = data.get("Composer", "Unknown")
-    charter = data.get("Charter", "Unknown")
+    name = data.get("Name", "UK")
+    chart = data.get("Chart", "UK")
+    level = data.get("Level", "UK Lv.?")
+    composer = data.get("Composer", "UK")
+    charter = data.get("Charter", "UK")
+    illustrator = data.get("Illustration", "UK")
     with open(PLUGIN_DIR / "tips.txt", "r", encoding="utf-8") as f:
         lines = [line.strip() for line in f if line.strip()]  # 过滤空行
     tip = random.choice(lines)
@@ -468,9 +469,11 @@ def parse_info(info_text: str) -> str:
                     "name": name,
                     "level": level,
                     "difficulty": int(re.findall(r'(?i)lv\.(\S+)', level)[-1] if re.findall(r'(?i)lv\.(\S+)', level) else "UK"),
-                    "illustrator": "UK",
+                    "illustrator": illustrator,
                     "tip": tip,
                     "intro": "棍母",
+                    "composer": composer,
+                    "charter": charter,
                 }
     return (f"Render Complete:\n"
             f"Name: {name}\n"
