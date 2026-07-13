@@ -431,14 +431,15 @@ async def run_phi_tk_cli(input_zip: Path, output_video: Path, resolution: str, f
         proc = await asyncio.create_subprocess_exec(
         *cmd,
         stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
         )
-    except: 
-        print('FuckFakeError。。。')
+    except Exception as e: 
+        logger.error(f"启动子进程失败: {str(e)}")
+        raise RuntimeError(f"启动 phi-tk-cli 进程异常: {e}") from e
     stdout = await proc.communicate()
     if proc.returncode != 0:
-        error_msg = 'Errored'
-        logger.error(f"phi-tk-cli 标准错误: {error_msg}")
-        #raise RuntimeError(f"phi-tk-cli 执行失败，返回码 {proc.returncode}，错误信息: {error_msg}")
+        logger.error(f"phi-tk-cli STDERR:{proc.stderr}, STDOUT:{proc.stdout}")
+        raise RuntimeError(f"phi-tk-cli 执行失败，返回码 {proc.returncode}，错误信息: {error_msg}")
     #Calc Time...
     end = time.time()
     diff = end - start_time
