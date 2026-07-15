@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nonebot-plugin-phitk-autorender"
-version = "1.0.2"
+version = "1.0.3"
 description = "Phigros谱面自动渲染NoneBot2插件，调用phi-tk-cli生成谱面视频"
 authors = [
     { name = "CNMDBook", email = "3466756568@qq.com" }

@@ -213,19 +213,18 @@ async def handle_render(bot: Bot, event: MessageEvent):
         chart_json, cover_png, song_mp3, parsed_info = await process_assemb(assemb_dir)
         logger.info("重命名完成")
 
-        logger.info(f"压缩 {assemb_dir} 到 {chart_zip}")
-        await make_zip(assemb_dir, chart_zip)
-        logger.info(f"压缩完成，大小: {os.path.getsize(chart_zip)} bytes")
+        #logger.info(f"压缩 {assemb_dir} 到 {chart_zip}")
+        #await make_zip(assemb_dir, chart_zip)
+        #logger.info(f"压缩完成，大小: {os.path.getsize(chart_zip)} bytes")
 
         # shutil.rmtree(assemb_dir, ignore_errors=True)
-        logger.info("已清理 assemb 目录")
+        #logger.info("已清理 assemb 目录")
 
         pre_msg = parsed_info
         logger.info(f"PreMsg:\n{pre_msg}")
 
         await bot.send_group_msg(group_id=event.group_id, message=f"开始渲染 {file_name}，请稍候喵~")
-
-        await run_phi_tk_cli(chart_zip, result_video, res, fps, dark, load, finish)
+        await run_phi_tk_cli(assemb_dir, result_video, res, fps, dark, load, finish)
         logger.info(f"phi-tk-cli 完成，输出大小: {os.path.getsize(result_video)} bytes")
 
         await bot.send_group_msg(group_id=event.group_id, message=pre_msg + f"\nduring: {cost}")
@@ -388,16 +387,16 @@ async def process_assemb(assemb_dir: Path):
     print(generate_yaml(yaml_file))
     return assemb_dir / "chart.json", assemb_dir / "background.png", assemb_dir / "song.mp3", parsed_info
 
-async def make_zip(source_dir: Path, output_zip: Path):
-    import zipfile
+    #async def make_zip(source_dir: Path, output_zip: Path):
+    #import zipfile
     # with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zf:
     #     for root, _, files in os.walk(source_dir):
     #         for file in files:
     #             file_path = Path(root) / file
     #             arcname = file_path.relative_to(source_dir)
     #             zf.write(file_path, arcname)
-    os.system(f"zip -j {output_zip} {source_dir}/*")
-    logger.info(f"压缩完成: {output_zip}")
+    #os.system(f"zip -j {output_zip} {source_dir}/*")
+    #logger.info(f"压缩完成: {output_zip}")
 
 # async def download_file_by_url(url: str, save_path: Path):
 #     """通过 HTTP URL 下载文件"""
