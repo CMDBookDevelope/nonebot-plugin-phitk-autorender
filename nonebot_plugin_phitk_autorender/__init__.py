@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import os
 import asyncio
+import shlex
 import shutil
 import base64
 import re
 import random
 import yaml
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -19,7 +23,7 @@ from nonebot.plugin import PluginMetadata
 __plugin_meta__ = PluginMetadata(
     name="phitk-autorender",
     description="引用 .pez/.zip 文件，使用 phi-tk-cli 渲染视频并发送回群",
-    usage="引用一个 .pez 或 .zip 文件，@机器人 发送 /xr [参数]",
+    usage="引用一个 .pez 或 .zip 文件，@机器人 发送 /xr [分辨率] [帧率] [压暗] [load] [result] [--其他 phi-tk-cli 参数]",
     type="application",
     homepage="https://github.com/CMDBookDevelope/nonebot-plugin-phitk-autorender",
     supported_adapters={"~onebot.v11"},
@@ -29,13 +33,12 @@ PLUGIN_DIR = Path(__file__).parent
 # ===== 全局变量 =====
 ymlInfo = ""
 start_time = 0
-cost = ""
 
 # ===== 常量配置 =====
 BINARY = "phi-tk-cli" #你的phi-tk-cli可执行文件绝对路径(或者wrapper.sh)
 BASE_DIR = "/tmp/render" #存放渲染缓存的位置
 ASSETS_PATH = "/usr/lib/ptkc-assets" #phi-tk-cli的assets位置
-CRF = "20" #渲染质量参数
+CRF = 20 #渲染质量参数
 
 RESOLUTION_MAP = {
     "1k": "1920x1440",
@@ -90,34 +93,11 @@ async def handle_render(bot: Bot, event: MessageEvent):
     else:
         args_text = raw_text[7:].strip()
 
-    raw_args = args_text.split()
-    res = DEFAULT_RES
-    fps = DEFAULT_FPS
-    dark = None
-    load = False
-    finish = False
-    for arg in raw_args:
-        arg_lower = arg.lower()
-        if arg_lower in RESOLUTION_MAP:
-            res = RESOLUTION_MAP[arg_lower]
-        elif arg_lower == "load":
-            load = True
-        elif arg_lower == "finish":
-            finish = True
-        else:
-            try:
-                num = int(arg)
-                if fps is None:
-                    fps = num
-                elif dark is None:
-                    if 1 <= num <= 100:
-                        dark = num
-                    else:
-                        logger.warning(f"暗度值 {num} 超出 1-100，忽略")
-            except ValueError:
-                logger.warning(f"无法识别的参数：{arg}，忽略")
-
-    logger.info(f"解析参数：分辨率={res}, 帧率={fps}, 暗度={dark}, load={load}, finish={finish}")
+    options = parse_render_args(args_text)
+    logger.info(
+        f"解析参数：分辨率={options.resolution}, 帧率={options.fps}, CRF={options.crf}, "
+        f"额外参数={options.flags or '无'}"
+    )
 
     # 3. 检查是否引用消息
     reply = event.reply
@@ -224,7 +204,7 @@ async def handle_render(bot: Bot, event: MessageEvent):
         logger.info(f"PreMsg:\n{pre_msg}")
 
         await bot.send_group_msg(group_id=event.group_id, message=f"开始渲染 {file_name}，请稍候喵~")
-        await run_phi_tk_cli(assemb_dir, result_video, res, fps, dark, load, finish)
+        cost = await run_phi_tk_cli(assemb_dir, result_video, options, start_time)
         logger.info(f"phi-tk-cli 完成，输出大小: {os.path.getsize(result_video)} bytes")
 
         await bot.send_group_msg(group_id=event.group_id, message=pre_msg + f"\nduring: {cost}")
@@ -407,45 +387,321 @@ async def process_assemb(assemb_dir: Path):
 #                 await f.write(await response.read())
 #     logger.info(f"文件从 URL 下载到 {save_path}")
 
-async def run_phi_tk_cli(input_zip: Path, output_video: Path, resolution: str, fps: int, dark: Optional[int], load: bool, finish: bool):
-    global cost
-    cmd = [
-        BINARY,
-        "--input", input_zip.as_posix(),
-        "--output", output_video.as_posix(),
-        "--resolution", resolution,
-        "--crf", CRF,
-        "--assets", ASSETS_PATH,
-        "--fps", str(fps),
-    ]
-    if dark is not None:
-        cmd.extend(["--dark", str(dark)])
-    if load:
-        cmd.append("--load")
-    if finish:
-        cmd.append("--finish")
+# ===== 渲染参数（适配 phi-tk-cli 2026-11 版的参数改名）=====
+#
+# 改名：
+#   --dark   → --dim     （背景压暗，0-100）
+#   --finish → --result  （结算画面）
+# 没变：--input / --output / --resolution / --crf / --fps / --assets / --load
+# 另外 CLI 新增了 UI / 玩法 / 编码 / 音频一大堆参数，这里按「是否需要取值」
+# 列了全表，群友在 /xr 后面直接写 `--name 小明`、`--speed 1.2`、
+# `--ui score,combo` 就能透传给 phi-tk-cli。
+CLI_OPTIONS: dict[str, bool] = {
+    # 基础
+    "resolution": True,
+    "fps": True,
+    "crf": True,
+    # UI / 场景
+    "dim": True,
+    "result": False,
+    "load": False,
+    "ending": True,
+    "name": True,
+    "rks": True,
+    "combo": True,
+    "watermark": True,
+    "ui": True,
+    "hide-ui": True,
+    "bar": False,
+    "score-aim": False,
+    "chart-debug": False,
+    "flid-x": False,
+    "chart-ratio": True,
+    "background": False,
+    # 玩法 / 特效
+    "speed": True,
+    "note-scale": True,
+    "volume-music": True,
+    "volume-sfx": True,
+    "fxaa": False,
+    "no-particle": False,
+    "no-effect": False,
+    "no-double-hint": False,
+    "aggressive": False,
+    "hand-split": False,
+    "sample-count": True,
+    # 编码
+    "codec": True,
+    "encoder": True,
+    "preset": True,
+    "format": True,
+    "bitrate-control": True,
+    "bitrate": True,
+    "no-hw-accel": False,
+    "ffmpeg-thread": False,
+    # 音频
+    "target-audio": True,
+    "audio-format": True,
+    "audio-bit": True,
+    "audio-delay-frames": True,
+}
 
-    logger.info(f"执行命令: {' '.join(cmd)}")
-    try: 
+# 老名字继续接受：群里还有人写 dark / finish
+CLI_OPTION_ALIASES = {"dark": "dim", "finish": "result"}
+
+# 群里直接写、不带 -- 的关键字
+CLI_KEYWORDS = {"dark": "dim", "finish": "result", "dim": "dim", "load": "load", "result": "result"}
+
+# 这些参数不让群友指定：前三个由插件控制，后三个（avatar/respack）能读本机任意文件
+CLI_PROTECTED = {"input", "output", "assets", "avatar", "respack"}
+
+
+@dataclass
+class RenderOptions:
+    """一次渲染要传给 phi-tk-cli 的参数。"""
+
+    resolution: str = DEFAULT_RES
+    fps: int = DEFAULT_FPS
+    crf: int = CRF
+    # 规范名 → 取值；None 表示布尔开关。用 dict 保留命令行里的顺序。
+    flags: dict = field(default_factory=dict)
+    # 用户显式给过的参数，位置参数不会覆盖它们
+    explicit: set = field(default_factory=set)
+
+
+def _normalize_resolution(text: str) -> Optional[str]:
+    token = text.strip().lower()
+    if token in RESOLUTION_MAP:
+        return RESOLUTION_MAP[token]
+    if re.fullmatch(r"\d{2,5}x\d{2,5}", token):
+        return token
+    return None
+
+
+def _store_option(options: RenderOptions, name: str, value: Optional[str]) -> None:
+    """把解析出的参数写进 options，顺便做一次轻量校验。"""
+    name = CLI_OPTION_ALIASES.get(name, name)
+
+    if name == "resolution":
+        resolution = _normalize_resolution(value or "")
+        if resolution:
+            options.resolution = resolution
+            options.explicit.add("resolution")
+        else:
+            logger.warning(f"无法识别的分辨率：{value}，忽略")
+        return
+
+    if name == "fps":
+        try:
+            fps = int(str(value))
+            if fps <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            logger.warning(f"帧率必须是正整数，收到 {value}，忽略")
+            return
+        options.fps = fps
+        options.explicit.add("fps")
+        return
+
+    if name == "crf":
+        try:
+            crf = int(str(value))
+        except (TypeError, ValueError):
+            logger.warning(f"CRF 必须是 1-51 的整数，收到 {value}，忽略")
+            return
+        if not 1 <= crf <= 51:
+            logger.warning(f"CRF {crf} 超出 1-51，忽略")
+            return
+        options.crf = crf
+        return
+
+    if name not in CLI_OPTIONS:
+        logger.warning(f"未知参数 --{name}，忽略")
+        return
+
+    if CLI_OPTIONS[name]:
+        if value is None:
+            logger.warning(f"参数 --{name} 缺少取值，忽略")
+            return
+        # --dim 旧版是 --dark，范围 0-100（CLI 侧还会再 clamp 一次）
+        if name == "dim":
+            try:
+                dim = int(value)
+            except (TypeError, ValueError):
+                logger.warning(f"压暗值必须是 0-100 的整数，收到 {value}，忽略")
+                return
+            if not 0 <= dim <= 100:
+                logger.warning(f"压暗值 {dim} 超出 0-100，忽略")
+                return
+            value = str(dim)
+            options.explicit.add("dim")
+        options.flags[name] = value
+    else:
+        options.flags[name] = None
+
+
+def parse_render_args(args_text: str) -> RenderOptions:
+    """/xr 后面的参数解析。
+
+    支持三种写法，可混用：
+      /xr 1k 60 40 load result        # 位置参数 + 关键字（老写法）
+      /xr 1920x1080 60 --dim 40 --result
+      /xr --ui score,combo --speed 1.2
+    第一个裸数字是帧率、第二个是压暗（老版本这里写反了，已修）。
+    """
+    options = RenderOptions()
+    try:
+        tokens = shlex.split(args_text)
+    except ValueError:
+        tokens = args_text.split()
+
+    positional_numbers = []
+    index = 0
+    while index < len(tokens):
+        token = tokens[index].strip()
+        index += 1
+        if not token:
+            continue
+        lowered = token.lower()
+
+        # --name=value / --name value / --flag
+        if token.startswith("-"):
+            name, _, inline = token.lstrip("-").partition("=")
+            name = name.lower().replace("_", "-")
+            if name in CLI_PROTECTED:
+                logger.warning(f"参数 --{name} 由插件控制，忽略")
+                # 顺手把它后面的取值也吃掉，免得被当成位置参数
+                if inline is None and index < len(tokens) and not tokens[index].startswith("-"):
+                    index += 1
+                continue
+            needs_value = CLI_OPTIONS.get(CLI_OPTION_ALIASES.get(name, name), False)
+            value = inline or None
+            if needs_value and value is None:
+                if index >= len(tokens):
+                    logger.warning(f"参数 --{name} 缺少取值，忽略")
+                    continue
+                value = tokens[index]
+                index += 1
+            elif not needs_value and inline:
+                logger.warning(f"参数 --{name} 是开关，忽略取值 {inline}")
+            _store_option(options, name, value)
+            continue
+
+        # key=value（res=1k、dim=40 ...）
+        if "=" in token:
+            key, _, value = token.partition("=")
+            key = key.lower().replace("_", "-")
+            if key in ("res", "resolution"):
+                _store_option(options, "resolution", value)
+            elif key in CLI_OPTIONS or key in CLI_OPTION_ALIASES:
+                _store_option(options, key, value)
+            else:
+                logger.warning(f"无法识别的参数：{token}，忽略")
+            continue
+
+        # load / result / finish / dim 之类的关键字
+        if lowered in CLI_KEYWORDS:
+            name = CLI_KEYWORDS[lowered]
+            if CLI_OPTIONS[name]:
+                # dim 这种要取值的，后面跟个数字
+                if index < len(tokens) and tokens[index].isdigit():
+                    _store_option(options, name, tokens[index])
+                    index += 1
+                else:
+                    logger.warning(f"{lowered} 后面需要一个 0-100 的数字，忽略")
+            else:
+                _store_option(options, name, None)
+            continue
+
+        # 分辨率：1k / 2k / 720p / 1920x1440
+        resolution = _normalize_resolution(lowered)
+        if resolution:
+            options.resolution = resolution
+            options.explicit.add("resolution")
+            continue
+
+        # 裸数字：第一个是帧率，第二个是压暗
+        if re.fullmatch(r"\d+", token):
+            positional_numbers.append(int(token))
+            continue
+
+        logger.warning(f"无法识别的参数：{token}，忽略")
+
+    for number in positional_numbers:
+        if "fps" not in options.explicit:
+            if number <= 0 or number > 240:
+                logger.warning(f"帧率 {number} 不合理，忽略")
+                continue
+            options.fps = number
+            options.explicit.add("fps")
+        elif "dim" not in options.explicit:
+            if not 0 <= number <= 100:
+                logger.warning(f"压暗值 {number} 超出 0-100，忽略")
+                continue
+            options.flags["dim"] = str(number)
+            options.explicit.add("dim")
+        else:
+            logger.warning(f"多余的参数 {number}，忽略")
+
+    return options
+
+
+def build_cli_argv(input_path: Path, output_video: Path, options: RenderOptions) -> list:
+    """拼出 phi-tk-cli 的命令行（新的参数名）。"""
+    argv = [
+        BINARY,
+        "--input", input_path.as_posix(),
+        "--output", output_video.as_posix(),
+        "--resolution", options.resolution,
+        "--crf", str(options.crf),
+        "--fps", str(options.fps),
+        "--assets", ASSETS_PATH,
+    ]
+    for name, value in options.flags.items():
+        if value is None:
+            argv.append(f"--{name}")
+        else:
+            argv.extend([f"--{name}", str(value)])
+    return argv
+
+
+async def run_phi_tk_cli(input_chart: Path, output_video: Path, options: RenderOptions, started_at: float = 0):
+    # input_chart 可以是 .pez/.zip 压缩包，也可以是已经解好的谱面目录
+    cmd = build_cli_argv(input_chart, output_video, options)
+    logger.info(f"执行命令: {' '.join(shlex.quote(part) for part in cmd)}")
+    try:
         proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
-    except Exception as e: 
+    except Exception as e:
         logger.error(f"启动子进程失败: {str(e)}")
         raise RuntimeError(f"启动 phi-tk-cli 进程异常: {e}") from e
-    stdout = await proc.communicate()
+
+    stdout, stderr = await proc.communicate()
+    out_text = stdout.decode(errors="ignore").strip()
+    err_text = stderr.decode(errors="ignore").strip()
+
     if proc.returncode != 0:
-        logger.error(f"phi-tk-cli STDERR:{proc.stderr}, STDOUT:{proc.stdout}")
+        # 新版 render.rs 的日志走 stdout（env_logger），报错只看 stderr 会漏
+        logger.error(
+            f"phi-tk-cli 退出码 {proc.returncode}\n"
+            f"STDOUT:\n{out_text[-4000:]}\nSTDERR:\n{err_text[-4000:]}"
+        )
         raise RuntimeError(f"phi-tk-cli 执行失败，返回码 {proc.returncode}")
+
+    if err_text:
+        logger.debug(f"phi-tk-cli STDERR: {err_text[-4000:]}")
+
     #Calc Time...
-    end = time.time()
-    diff = end - start_time
+    diff = time.time() - started_at if started_at else 0.0
     m = int(diff // 60)
     s = diff % 60
     cost = f"{m}m{s:.2f}s"
     logger.info(f"phi-tk-cli 成功退出，输出视频: {output_video}, 用时{cost}")
+    return cost
+
 
 def parse_info(info_text: str) -> str:
     global ymlInfo
@@ -467,7 +723,7 @@ def parse_info(info_text: str) -> str:
     ymlInfo = {
                     "name": name,
                     "level": level,
-                    "difficulty": int(re.findall(r'(?i)lv\.(\S+)', level)[-1] if re.findall(r'(?i)lv\.(\S+)', level) else "UK"),
+                    "difficulty": int(re.findall(r'(?i)lv\.(\S+)', level)[-1] if re.findall(r'(?i)lv\.(\S+)', level) else 67),
                     "illustrator": illustrator,
                     "tip": tip,
                     "intro": "棍母",
