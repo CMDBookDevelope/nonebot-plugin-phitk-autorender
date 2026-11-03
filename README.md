@@ -125,7 +125,7 @@ plugins = ["nonebot-plugin-phitk-autorender"]
 - ✅ 支持高质量渲染
 - ✅ phi-tk-cli 支持服务器硬件加速
 - ✅ 支持曲绘背景
-- ✅ 支持 info.yml 解析出的歌曲信息&难度信息显示 (❌ 暂不支持 info.txt 解析)
+- ✅ 支持 info.yml 解析出的歌曲信息&难度信息显示；info.txt 是可选的旧格式（只有 txt 时自动生成 info.yml，只有 yml 时直接使用，不再报错）
 - [❌ 不支持Simai谱面渲染](https://www.maiviewer.net/ "awmc。。。")
 
 ## 🔧 依赖

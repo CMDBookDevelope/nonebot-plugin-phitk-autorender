@@ -16,7 +16,7 @@ from typing import Optional
 import aiofiles
 import aiohttp
 from nonebot import on_notice, on_message, logger
-from nonebot.adapters.onebot.v11 import Bot, GroupUploadNoticeEvent, MessageEvent, MessageSegment
+from nonebot.adapters.onebot.v11 import Bot, GroupUploadNoticeEvent, Message, MessageEvent, MessageSegment
 from nonebot.rule import to_me
 from nonebot.plugin import PluginMetadata
 
@@ -218,13 +218,17 @@ async def handle_render(bot: Bot, event: MessageEvent):
 
     except Exception as e:
         logger.error(f"处理失败: {e}", exc_info=True)
-        # try:
-        #     await bot.send_group_msg(
-        #         group_id=event.group_id,
-        #         message=f"渲染失败: {str(e)[:200]}"
-        #     )
-        # except Exception as send_err:
-        #     logger.error(f"发送错误消息失败: {send_err}")
+        # 错误报告除了写日志，也发回群里；截断避免超过 QQ 消息长度限制。
+        detail = f"{type(e).__name__}: {e}".strip()
+        if len(detail) > 1500:
+            detail = detail[:1500] + "…（已截断，完整日志见控制台）"
+        try:
+            await bot.send_group_msg(
+                group_id=event.group_id,
+                message=Message(MessageSegment.text(f"渲染失败：{file_name}\n{detail}")),
+            )
+        except Exception as send_err:
+            logger.error(f"发送错误消息失败: {send_err}")
     # finally:
     #     shutil.rmtree(seed_dir, ignore_errors=True)
 # ===== 辅助函数（保持不变） =====
@@ -354,18 +358,57 @@ async def process_assemb(assemb_dir: Path):
         raise ValueError(f"期望恰好一个 PNG 文件，找到 {len(png_files)} 个")
     if len(audio_files) != 1:
         raise ValueError(f"期望恰好一个音频文件，找到 {len(audio_files)} 个")
-    if not info_file.exists():
-        raise ValueError("缺少 info.txt 文件")
 
     json_files[0].rename(assemb_dir / "chart.json")
     png_files[0].rename(assemb_dir / "background.png")
     audio_files[0].rename(assemb_dir / "song.mp3")
 
-    async with aiofiles.open(info_file, 'r', encoding='utf-8') as f:
-        info_text = await f.read()
-    parsed_info = parse_info(info_text)
-    print(generate_yaml(yaml_file))
+    # info.txt 是可选的老格式：谱面已经自带 info.yml 时直接用它，
+    # 不能因为缺少 info.txt 就让整个渲染失败。
+    if info_file.exists():
+        async with aiofiles.open(info_file, 'r', encoding='utf-8') as f:
+            info_text = await f.read()
+        parsed_info = parse_info(info_text)
+        if not yaml_file.exists():
+            logger.info(generate_yaml(yaml_file))
+    elif yaml_file.exists():
+        parsed_info = await describe_yaml_info(yaml_file)
+    else:
+        raise ValueError("缺少 info.txt / info.yml 文件")
+
     return assemb_dir / "chart.json", assemb_dir / "background.png", assemb_dir / "song.mp3", parsed_info
+
+
+async def describe_yaml_info(yaml_file: Path) -> str:
+    """Build the pre-render message from an existing info.yml.
+
+    Phira charts use a real YAML mapping, while some RPE exports save the
+    "Key: Value" text under a .yml name; handle both.
+    """
+    async with aiofiles.open(yaml_file, 'r', encoding='utf-8') as f:
+        text = await f.read()
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError:
+        data = None
+    if not isinstance(data, dict):
+        return parse_info(text)
+
+    name = data.get("name") or data.get("Name") or "UK"
+    level = data.get("level") or data.get("Level") or "UK Lv.?"
+    composer = data.get("composer") or data.get("Composer") or "UK"
+    charter = data.get("charter") or data.get("Charter") or "UK"
+    tip = data.get("tip") or data.get("Tip") or ""
+    lines = [
+        "Render Complete:",
+        f"Name: {name}",
+        f"Level: {level}",
+        f"Composer: {composer}",
+        f"Charter: {charter}",
+    ]
+    if tip:
+        lines.append(f"tip: {tip}")
+    return "\n".join(lines)
 
     #async def make_zip(source_dir: Path, output_zip: Path):
     #import zipfile
