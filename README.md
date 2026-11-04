@@ -21,7 +21,7 @@
   </a>
 
   <a href="https://github.com/CMDBookDevelope/Phi-TKC">
-    <img src="https://img.shields.io/badge/Phi--TK-1.0.2+-white.svg" alt="Phi-TK">
+    <img src="https://img.shields.io/badge/Phi--TKC-1.0.2+-white.svg" alt="Phi-TK">
   </a>
 
   <a href="https://github.com/CMDBookDevelope/Phi-TK-cli">
