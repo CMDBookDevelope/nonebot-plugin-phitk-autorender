@@ -20,8 +20,12 @@
     <img src="https://img.shields.io/badge/Phi--TK-2.0.1+-magenta.svg" alt="Phi-TK">
   </a>
 
+  <a href="https://github.com/CMDBookDevelope/Phi-TKC">
+    <img src="https://img.shields.io/badge/Phi--TK-1.0.2+-white.svg" alt="Phi-TK">
+  </a>
+
   <a href="https://github.com/CMDBookDevelope/Phi-TK-cli">
-    <img src="https://img.shields.io/badge/Phi--TK--CLI-1.0.0+-pink.svg" alt="Phi-TK-CLI">
+    <img src="https://img.shields.io/badge/Phi--TK--CLI-1.0.4+-pink.svg" alt="Phi-TK-CLI">
   </a>
   
 </p>
