@@ -208,10 +208,11 @@ async def handle_render(bot: Bot, event: MessageEvent):
         logger.info(f"phi-tk-cli 完成，输出大小: {os.path.getsize(result_video)} bytes")
 
         await bot.send_group_msg(group_id=event.group_id, message=pre_msg + f"\nduring: {cost}")
-        await bot.send_group_msg(
-            group_id=event.group_id,
-            message=MessageSegment.video(Path(result_video))
-        )
+
+        # 渲染结果改为「上传群文件」而不是发视频消息：
+        # 视频消息会被客户端二次压缩，大文件还经常直接发送失败；群文件是原片。
+        group_file_name = _group_file_name(file_name)
+        await send_group_file(bot, event.group_id, result_video, group_file_name)
 
         # shutil.rmtree(seed_dir, ignore_errors=True)
         logger.info(f"成功处理 {file_name}，已发送至群 {group_id}")
@@ -744,6 +745,44 @@ async def run_phi_tk_cli(input_chart: Path, output_video: Path, options: RenderO
     cost = f"{m}m{s:.2f}s"
     logger.info(f"phi-tk-cli 成功退出，输出视频: {output_video}, 用时{cost}")
     return cost
+
+
+def _group_file_name(chart_file_name: str, suffix: str = ".mp4") -> str:
+    """用谱面名给群文件起名，顺便去掉 QQ 群文件名不接受的字符。"""
+    stem = Path(chart_file_name).stem.strip()
+    if not stem or stem.startswith("."):
+        stem = "render"
+    stem = re.sub(r'[\\/:*?"<>|\r\n\t]', "_", stem)
+    return f"{stem}{suffix}"
+
+
+async def send_group_file(bot: Bot, group_id: int, video_path: Path, name: str) -> None:
+    """把渲染结果上传到群文件（原片，不会被二次压缩）。
+
+    OneBot v11 的 `upload_group_file` 在 nonebot-adapter-onebot 里没有显式方法，
+    `Bot.__getattr__` 会把它转成 `call_api("upload_group_file", ...)`，直接调用即可。
+    `file` 传本地绝对路径（NapCat / go-cqhttp 都支持），`name` 是群文件里显示的名字。
+    """
+    if not video_path.exists():
+        raise FileNotFoundError(f"渲染结果不存在：{video_path}")
+
+    size_mb = os.path.getsize(video_path) / 1024 / 1024
+    logger.info(f"上传群文件：{name}（{size_mb:.2f} MB）")
+    resp = await bot.upload_group_file(
+        group_id=group_id,
+        file=video_path.as_posix(),
+        name=name,
+    )
+    logger.info(f"群文件上传完成：{resp}")
+
+    # 上传动作本身在部分实现里不会在群里留提示，补一句话告诉群友去哪找。
+    try:
+        await bot.send_group_msg(
+            group_id=group_id,
+            message=f"渲染完成，原片已上传到群文件：{name}（{size_mb:.1f} MB）",
+        )
+    except Exception as notify_err:
+        logger.warning(f"发送群文件提示失败: {notify_err}")
 
 
 def parse_info(info_text: str) -> str:

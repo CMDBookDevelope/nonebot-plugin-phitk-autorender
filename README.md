@@ -78,6 +78,7 @@ plugins = ["nonebot-plugin-phitk-autorender"]
 ### 基础指令
 - `引用一个 .pez | .zip 文件并 @bot /render` - 以默认 `1k 30fps 无加载动画&结算动画` 渲染引用谱面
 - `Alternative: @bot /xr` - /render 的命令别名
+- 渲染完成后，**原片会作为「群文件」上传**（不再以视频消息发出，避免被二次压缩 / 大文件发不出去），文件名沿用谱面名
 
 ### 自定义参数（都是可选的）
 按顺序写的位置参数：
